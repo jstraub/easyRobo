@@ -29,7 +29,7 @@ if __name__ == '__main__':
   lCov = np.eye(2)*2 # covariance for landmark position estimate
 
   #robo = DotRobo2D(x0,RangeSensor(50,toRad(45)))
-  robo = EKF_SLAM_Robo(x0,xCov,lCov,RangeSensor(50,toRad(360),zCov))
+  robo = EKF_SLAM_Robo(x0,xCov,lCov,RangeSensor(50,toRad(90),zCov))
   world = GridWorld2D(200,200,uCov)
   for i in range(0,100):
     world.world[np.random.randint(0,199,1),np.random.randint(0,199,1)] =100
