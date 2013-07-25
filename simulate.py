@@ -7,6 +7,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import pickle
 
 from robo import *
 from simpleWorld import *
@@ -28,7 +29,7 @@ if __name__ == '__main__':
   lCov = np.eye(2)*2 # covariance for landmark position estimate
 
   #robo = DotRobo2D(x0,RangeSensor(50,toRad(45)))
-  robo = EKF_SLAM_Robo(x0,xCov,lCov,RangeSensor(50,toRad(45),zCov))
+  robo = EKF_SLAM_Robo(x0,xCov,lCov,RangeSensor(50,toRad(360),zCov))
   world = GridWorld2D(200,200,uCov)
   for i in range(0,100):
     world.world[np.random.randint(0,199,1),np.random.randint(0,199,1)] =100
@@ -36,7 +37,7 @@ if __name__ == '__main__':
 
   fig = plt.figure()
   axs=[plt.subplot(121), plt.subplot(122)]
-  for t in range(0,500):
+  for t in range(0,200):
     axs[0].clear()
     axs[1].clear()
     world.plot(axs)
@@ -52,5 +53,7 @@ if __name__ == '__main__':
     print '--- t='+str(t)
     print robo.status()
     time.sleep(0.1)
+
+  pickle.dump(robo.z,open('obsHist.pickle','w'))
   
   raw_input()
