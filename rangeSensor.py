@@ -47,7 +47,7 @@ class MultiModalRangeSensor(RangeSensor):
       z = np.dot(s.zCov,np.resize(np.random.randn(2),(2,1)))
       z[0] += dist(x[0:2],obst[0:2])
       if np.random.rand(1)[0] > 0.5: # flip a coin to obtain multimodal outcome
-        z[0] += 1
+        z[0] += 2
       z[1] = ensureRange(z[1] + angle(x,obst[0:2]))
       if z[0] <= s.maxR and np.abs(z[1]) < s.maxPhi/2.0:
         plt.plot(obst[0],obst[1],'gx')
