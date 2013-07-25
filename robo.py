@@ -84,7 +84,7 @@ class DotRobo2D(Robo2D):
     s.u[-1][1] = 0.1 # rotational speed omega 
     return s.u[-1]
 
-class EKF_SLAM_Robo(DotRobo2D):
+class SAM_Robo(DotRobo2D):
   def __init__(s,x0,xCov,lCov,sensor):
     s.C = np.zeros((3,3))
     s.xx = x0 # robot 2D state 
@@ -140,11 +140,11 @@ class EKF_SLAM_Robo(DotRobo2D):
 
   def think(s,plot=None):
     # append new pose and new landmarks (if new ones were observed) 
-    J,b = EKF_SLAM_Robo.augmentState(s)
+    J,b = SAM_Robo.augmentState(s)
 
     for it in range(0,20):
       if it>0:
-        J,b = EKF_SLAM_Robo.relinearize(s)
+        J,b = SAM_Robo.relinearize(s)
       dx=np.linalg.solve(np.dot(J.T,J),np.dot(J.T,b))
 #      L = np.linalg.cholesky(np.dot(J.T,J))
 #      y=np.linalg.solve(L.T,np.dot(J.T,b))
@@ -163,7 +163,7 @@ class EKF_SLAM_Robo(DotRobo2D):
       #print 'bx={};\tby={}\tbtheta={}'.format(b[0:len(s.xx):3].T,b[1:len(s.xx):3].T,b[2:len(s.xx):3].T)
       #print 'zR={};\tzPhi={}'.format(b[len(s.xx)::2].T,b[len(s.xx)::2].T/np.pi*180.0)
       if plot is not None and plot is True:
-        EKF_SLAM_Robo.plotSnapshot(s,J,b)
+        SAM_Robo.plotSnapshot(s,J,b)
 
       if avgDx < 1.0e-6:
         break
@@ -184,7 +184,7 @@ class EKF_SLAM_Robo(DotRobo2D):
       dx[2] = ensureRange(dx[2])
       s.bx[ix:ix+3] = np.dot(s.xCovInvSqrt.T, dx)
 #      print 'xx={}; ix={}'.format(s.xx,ix)
-      s.Jxx[ix:ix+3,ix-3:ix] = np.dot(s.xCovInvSqrt.T, EKF_SLAM_Robo.dxdx(s,s.xx[ix:ix+3],s.u[t]))
+      s.Jxx[ix:ix+3,ix-3:ix] = np.dot(s.xCovInvSqrt.T, SAM_Robo.dxdx(s,s.xx[ix:ix+3],s.u[t]))
     #s.bx[2::3] = ensureRange(s.bx[2::3])
       
     ibl = 0
@@ -196,8 +196,8 @@ class EKF_SLAM_Robo(DotRobo2D):
         dz = np.resize(s.z[t][i][0:2],(2,1))-zPred
         dz[1] = ensureRange(dz[1])
         s.bl[ibl:ibl+2] = np.dot(s.lCovInvSqrt.T, dz)
-        s.Jlx[ibl:ibl+2, ix:ix+3] = np.dot(s.lCovInvSqrt.T, EKF_SLAM_Robo.dldx(s,s.xx[ix:ix+2], s.xl[il:il+2]))
-        s.Jll[ibl:ibl+2, il:il+2] = np.dot(s.lCovInvSqrt.T, EKF_SLAM_Robo.dldl(s,s.xx[ix:ix+2], s.xl[il:il+2]))
+        s.Jlx[ibl:ibl+2, ix:ix+3] = np.dot(s.lCovInvSqrt.T, SAM_Robo.dldx(s,s.xx[ix:ix+2], s.xl[il:il+2]))
+        s.Jll[ibl:ibl+2, il:il+2] = np.dot(s.lCovInvSqrt.T, SAM_Robo.dldl(s,s.xx[ix:ix+2], s.xl[il:il+2]))
         #print 'zReal={},{}; zPred={}; dz={}'.format(s.z[t][i][0],toDeg(s.z[t][i][0]),toDeg(zPred[0]),toDeg(s.z[t][i][0]-zPred[0]))
         ibl +=2
     #s.bl[1::2] = ensureRange(s.bl[1::2])
@@ -225,7 +225,7 @@ class EKF_SLAM_Robo(DotRobo2D):
     Jxx = np.zeros((h+3,w+3))
     Jxx[0:h,0:h] = s.Jxx
     Jxx[h:h+3,w:w+3] = np.dot(s.xCovInvSqrt.T, -np.eye(3))
-    Jxx[h:h+3,w-3:w] = np.dot(s.xCovInvSqrt.T, EKF_SLAM_Robo.dxdx(s,s.xx[ix:ix+3],s.u[-1]))
+    Jxx[h:h+3,w-3:w] = np.dot(s.xCovInvSqrt.T, SAM_Robo.dxdx(s,s.xx[ix:ix+3],s.u[-1]))
     s.Jxx = Jxx
     
     s.nz += len(s.z[-1])
@@ -233,7 +233,7 @@ class EKF_SLAM_Robo(DotRobo2D):
       if z[2] not in s.l:
         # new landmark -> augment state
         s.l[z[2]] = len(s.xl)
-        s.xl = np.concatenate((s.xl,EKF_SLAM_Robo.initLandmark(s,s.xx[ix:ix+3],z[0:2])),axis=0)
+        s.xl = np.concatenate((s.xl,SAM_Robo.initLandmark(s,s.xx[ix:ix+3],z[0:2])),axis=0)
 #        print s.xx[ix:ix+3]
 #        print '  new l: {}@{} ({})'.format(s.l[z[2]],s.xl[s.l[z[2]]-2:s.l[z[2]]],z[0:2])
 
@@ -252,7 +252,7 @@ class EKF_SLAM_Robo(DotRobo2D):
       z = s.z[-1][i]
       il = s.l[z[2]] 
 #      print 'z:{}, il={}, ix={}, Jlx.shape={}; l={}'.format(z,il,ix,Jlx.shape,s.xl[il:il+2])
-      Jlx[h+i*2:h+i*2+2, ix:ix+3] = np.dot(s.lCovInvSqrt.T, EKF_SLAM_Robo.dldx(s,s.xx[ix:ix+2], s.xl[il:il+2]))
+      Jlx[h+i*2:h+i*2+2, ix:ix+3] = np.dot(s.lCovInvSqrt.T, SAM_Robo.dldx(s,s.xx[ix:ix+2], s.xl[il:il+2]))
     s.Jlx = Jlx
 #    print 'Jlx=\n{}'.format(s.Jlx)
 
@@ -264,7 +264,7 @@ class EKF_SLAM_Robo(DotRobo2D):
     for i in range(0,len(s.z[-1])):
       z = s.z[-1][i]
       il = s.l[z[2]] 
-      Jll[h+i*2:h+i*2+2, il:il+2] = np.dot(s.lCovInvSqrt.T, EKF_SLAM_Robo.dldl(s,s.xx[ix:ix+2], s.xl[il:il+2]))
+      Jll[h+i*2:h+i*2+2, il:il+2] = np.dot(s.lCovInvSqrt.T, SAM_Robo.dldl(s,s.xx[ix:ix+2], s.xl[il:il+2]))
     s.Jll = Jll
 #    print 'Jll=\n{}'.format(s.Jll)
 
