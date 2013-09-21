@@ -44,7 +44,7 @@ class GridWorld2D:
 
   def plot(s,axs):
     for ax in axs:
-      ax.imshow(s.world,cmap=cm.hot)
+      ax.imshow(s.world,interpolation='nearest',cmap=cm.hot)
       ax.set_xlim([-0.5,s.world.shape[1]-0.5])
       ax.set_ylim([-0.5,s.world.shape[0]-0.5])
 
